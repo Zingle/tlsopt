@@ -1,0 +1,26 @@
+{
+  "name": "tlsopt",
+  "version": "0.0.1",
+  "description": "auto-detect TLS settings",
+  "main": "tlsopt.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Zingle/tlsopt.git"
+  },
+  "keywords": [
+    "environment",
+    "variable",
+    "cli",
+    "argument",
+    "options"
+  ],
+  "author": "Richard Remer <reanjr@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Zingle/tlsopt/issues"
+  },
+  "homepage": "https://github.com/Zingle/tlsopt#readme"
+}
