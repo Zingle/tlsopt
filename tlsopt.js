@@ -1,5 +1,6 @@
 const fs = require("fs");
 const keys = Object.keys;
+const { constants } = require('crypto');
 
 /**
  * Read TLS options from filesystem synchronously.  Paths are read from CLI
@@ -13,7 +14,9 @@ function readSync() {
     const tls_cert = readOpt("--tls-cert");
     const tls_key = readOpt("--tls-key");
     const tls_ca = readOpt("--tls-ca");
-    const result = {};
+    const result = {
+        secureOptions: constants.SSL_OP_NO_TLSv1
+    };    
 
     if (tls_cert) {
         if (tls_key) {
