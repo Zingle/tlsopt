@@ -9,12 +9,12 @@ const readFile = promisify(fs.readFile);
  * @param {boolean} preserve
  * @returns {object}
  */
-function readSync(preserve) {
+async function read(preserve) {
     const tlsopts = readTLSOpts(preserve);
 
     if (tlsopts) {
         for (const key in tlsopts) {
-            tlsopts[key] = fs.readFileSync(tlsopts[key]);
+            tlsopts[key] = await readFile(tlsopts[key]);
         }
 
         tlsopts.secureOptions = SSL_OP_NO_TLSv1;
@@ -29,12 +29,12 @@ function readSync(preserve) {
  * @param {boolean} preserve
  * @returns {object}
  */
-async function read(preserve) {
+function readSync(preserve) {
     const tlsopts = readTLSOpts(preserve);
 
     if (tlsopts) {
         for (const key in tlsopts) {
-            tlsopts[key] = await readFile(tlsopts[key]);
+            tlsopts[key] = fs.readFileSync(tlsopts[key]);
         }
 
         tlsopts.secureOptions = SSL_OP_NO_TLSv1;
