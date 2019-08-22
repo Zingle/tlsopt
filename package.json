@@ -1,6 +1,6 @@
 {
   "name": "tlsopt",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "auto-detect TLS settings",
   "main": "tlsopt.js",
   "scripts": {

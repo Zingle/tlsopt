@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {constants: SSL_OP_NO_TLSv1} = require("crypto");
+const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
 const keys = Object.keys;
 
 /**
