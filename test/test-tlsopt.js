@@ -1,5 +1,6 @@
 const expect = require("expect.js");
 const mockfs = require("mock-fs");
+const {join} = require("path");
 const http = require("http");
 const https = require("https");
 const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
@@ -156,5 +157,35 @@ describe("readSync([boolean])", () => {
         expect(syncOpts.key.toString()).to.be(asyncOpts.key.toString());
         expect(syncOpts.ca.toString()).to.be(asyncOpts.ca.toString());
         expect(syncOpts.secureOptions).to.be(asyncOpts.secureOptions);
+    });
+});
+
+describe("createServerSync()", () => {
+    let env;
+
+    beforeEach(() => {
+        env = process.env;
+        process.env = {};
+    });
+
+    afterEach(() => {
+        process.env = env;
+    });
+
+    it("should create http server when TLS options not set", () => {
+        const server = tlsopt.createServerSync();
+
+        expect(server).to.be.an(http.Server);
+        expect(server.tls).to.be(false);
+    });
+
+    it("should create https server when TLS options are set", () => {
+        process.env.TLS_CERT = join(__dirname, "tls/snakeoil.crt");
+        process.env.TLS_KEY = join(__dirname, "tls/snakeoil.key");
+
+        const server = tlsopt.createServerSync();
+
+        expect(tlsopt.createServerSync()).to.be.an(https.Server);
+        expect(server.tls).to.be(true);
     });
 });

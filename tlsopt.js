@@ -1,7 +1,25 @@
-const fs = require("fs");
 const {promisify} = require("util");
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
 const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
 const readFile = promisify(fs.readFile);
+
+/**
+ * Read TLS options from command-line or environment, load certificates from
+ * filesystem, and create either an http or https server based on those options.
+ * Strips command-line options which are used.
+ * @returns {http.Server|https.Server}
+ */
+function createServerSync() {
+    const tlsopts = readSync();
+    const web = tlsopts ? https : http
+    const server = web.createServer(...[tlsopts].filter(v=>v));
+
+    server.tls = Boolean(tlsopts);
+
+    return server;
+}
 
 /**
  * Read TLS options from command-line or environment and load certificates from
@@ -43,7 +61,7 @@ function readSync(preserve) {
     return tlsopts;
 }
 
-module.exports = {read, readSync};
+module.exports = {createServerSync, read, readSync};
 
 /**
  * Read TLS options from command-line or environment.  Strip command-line opts
