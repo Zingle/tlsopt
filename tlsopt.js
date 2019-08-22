@@ -1,124 +1,103 @@
 const fs = require("fs");
-const {constants: SSL_OP_NO_TLSv1} = require("crypto");
-const keys = Object.keys;
+const {promisify} = require("util");
+const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
+const readFile = promisify(fs.readFile);
 
 /**
- * Read TLS options from filesystem synchronously.  Paths are read from CLI
- * options or environment variables.
+ * Read TLS options from command-line or environment and load certificates from
+ * filesystem.  Strip command-line opts unless preserve is truthy.
+ * @param {boolean} preserve
  * @returns {object}
  */
-function readSync() {
-    const TLS_CERT = process.env.TLS_CERT;
-    const TLS_KEY = process.env.TLS_KEY;
-    const TLS_CA = process.env.TLS_CA;
-    const tls_cert = readOpt("--tls-cert");
-    const tls_key = readOpt("--tls-key");
-    const tls_ca = readOpt("--tls-ca");
-    const result = {secureOptions: SSL_OP_NO_TLSv1};
+function readSync(preserve) {
+    const tlsopts = readTLSOpts(preserve);
 
-    if (tls_cert) {
-        if (tls_key) {
-            result.cert = fs.readFileSync(tls_cert);
-            result.key = fs.readFileSync(tls_key);
-
-            if (tls_ca) {
-                result.ca = fs.readFileSync(tls_ca);
-            }
-        } else {
-            result.pfx = fs.readFileSync(tls_cert);
+    if (tlsopts) {
+        for (const key in tlsopts) {
+            tlsopts[key] = fs.readFileSync(tlsopts[key]);
         }
-    } else if (TLS_CERT) {
-        if (TLS_KEY) {
-            result.cert = fs.readFileSync(TLS_CERT);
-            result.key = fs.readFileSync(TLS_KEY);
 
-            if (TLS_CA) {
-                result.ca = fs.readFileSync(TLS_CA);
-            }
-        } else {
-            result.pfx = fs.readFileSync(TLS_CERT);
-        }
-    } else {
-        delete result.secureOptions;
+        tlsopts.secureOptions = SSL_OP_NO_TLSv1;
     }
 
-    return result;
+    return tlsopts;
 }
 
 /**
- * Read TLS options from filesystem asynchronously.  Paths are read from CLI
- * options or environment variables.
- * @returns {Promise}
+ * Read TLS options from command-line or environment and load certificates from
+ * filesystem.  Strip command-line opts unless preserve is truthy.
+ * @param {boolean} preserve
+ * @returns {object}
  */
-function read() {
-    const TLS_CERT = process.env.TLS_CERT;
-    const TLS_KEY = process.env.TLS_KEY;
-    const TLS_CA = process.env.TLS_CA;
-    const tls_cert = readOpt("--tls-cert");
-    const tls_key = readOpt("--tls-key");
-    const tls_ca = readOpt("--tls-ca");
-    const result = {};
+async function read(preserve) {
+    const tlsopts = readTLSOpts(preserve);
 
-    if (tls_cert) {
-        if (tls_key) {
-            result.cert = readFile(tls_cert);
-            result.key = readFile(tls_key);
-
-            if (tls_ca) {
-                result.ca = readFile(tls_ca);
-            }
-        } else {
-            result.pfx = readFile(tls_cert);
+    if (tlsopts) {
+        for (const key in tlsopts) {
+            tlsopts[key] = await readFile(tlsopts[key]);
         }
-    } else if (TLS_CERT) {
-        if (TLS_KEY) {
-            result.cert = readFile(TLS_CERT);
-            result.key = readFile(TLS_KEY);
 
-            if (TLS_CA) {
-                result.ca = readFile(TLS_CA);
-            }
-        } else {
-            result.pfx = readFile(TLS_CERT);
-        }
+        tlsopts.secureOptions = SSL_OP_NO_TLSv1;
     }
 
-    return Promise.all(keys(result).map(key => result[key].then(data => {
-        return result[key] = data;
-    }))).then(() => result);
+    return tlsopts;
 }
 
 module.exports = {read, readSync};
 
 /**
- * Read long-option value from CLI arguments.
- * @param {string} option
- * @returns {string}
+ * Read TLS options from command-line or environment.  Strip command-line opts
+ * unless preserve is truthy.
+ * @param {boolean} preserve
+ * @returns {object}
  */
-function readOpt(option) {
-    const prefix = `${option}=`;
+function readTLSOpts(preserve) {
+    const {TLS_CERT, TLS_CA, TLS_KEY} = process.env;
+    const opt = opt => readOpt(opt, preserve);
+    const [cert, ca, key] = ["--tls-cert", "--tls-ca", "--tls-key"].map(opt);
 
-    for (let i = 0, len = process.argv.length, arg; i < len; i++) {
-        arg = process.argv[i];
-
-        if (arg === option) {
-            return process.argv[i+1];
-        } else if (arg.indexOf(prefix) === 0) {
-            return arg.substr(prefix.length);
-        }
+    if (cert) {
+        return normalize(cert, key, ca);
+    } else if (TLS_CERT) {
+        return normalize(TLS_CERT, TLS_KEY, TLS_CA);
+    } else {
+        return null;
     }
 }
 
 /**
- * Read file asynchronously.
- * @param {string} path
- * @returns {Promise}
+ * Normalize positional TLS opts into an options object.
+ * @param {string} cert
+ * @param {string} key
+ * @param {string} ca
+ * @returns {object}
  */
-function readFile(path) {
-    return new Promise((resolve, reject) => {
-        fs.readFile(path, (err, data) => {
-            if (err) reject(err);
-            else resolve(data);
-        });
-    });
+function normalize(cert, key, ca) {
+    if (cert && key && ca) {
+        return {cert, key, ca};
+    } else if (cert && key) {
+        return {cert, key};
+    } else if (cert) {
+        return {pfx: cert};
+    } else {
+        return null;
+    }
+}
+
+/**
+ * Read long-option value from CLI arguments.  Strip option from arguments
+ * unless preserve is truthy.
+ * @param {string} option
+ * @param {boolean} [preserve]
+ * @returns {string}
+ */
+function readOpt(option, preserve) {
+    for (let i = 0, len = process.argv.length; i < len; i++) {
+        if (process.argv[i] === option) {
+            return preserve ? process.argv[++i] : process.argv.splice(i--, 2)[1];
+        } else if (process.argv[i].indexOf(`${option}=`) === 0) {
+            const arg = preserve ? process.argv[i] : process.argv.splice(i--, 1)[0];
+            return arg.slice(option.length + 1);
+        }
+    }
 }
