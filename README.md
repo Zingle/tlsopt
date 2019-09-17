@@ -64,3 +64,13 @@ tlsopt.read().then(opts => {
     const server = https.createServer(opts);
 });
 ```
+
+**Create Server Example**
+
+```js
+const tlsopt = require("tlsopt");
+const server = tlsopt.createServerSync();
+const port = server.tls ? 443 : 80;
+
+server.listen(port);
+```
