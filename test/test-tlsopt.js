@@ -160,7 +160,7 @@ describe("readSync([boolean])", () => {
     });
 });
 
-describe("createServerSync()", () => {
+describe("createServerSync([function])", () => {
     let env;
 
     beforeEach(() => {
@@ -187,5 +187,13 @@ describe("createServerSync()", () => {
 
         expect(tlsopt.createServerSync()).to.be.an(https.Server);
         expect(server.tls).to.be(true);
+    });
+
+    it("should add 'request' listener", () => {
+        const listener = () => {};
+        const server = tlsopt.createServerSync(listener);
+        const listeners = server.listeners("request");
+
+        expect(listeners.includes(listener)).to.be(true);
     });
 });

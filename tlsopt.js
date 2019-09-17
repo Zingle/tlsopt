@@ -3,18 +3,22 @@ const fs = require("fs");
 const http = require("http");
 const https = require("https");
 const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
+
+const {assign} = Object;
 const readFile = promisify(fs.readFile);
 
 /**
  * Read TLS options from command-line or environment, load certificates from
  * filesystem, and create either an http or https server based on those options.
  * Strips command-line options which are used.
+ * @param {function} [requestListener]
  * @returns {http.Server|https.Server}
  */
-function createServerSync() {
+function createServerSync(requestListener) {
     const tlsopts = readSync();
     const web = tlsopts ? https : http
-    const server = web.createServer(...[tlsopts].filter(v=>v));
+    const args = [tlsopts, requestListener].filter(v => v);
+    const server = web.createServer(...args);
 
     server.tls = Boolean(tlsopts);
 
