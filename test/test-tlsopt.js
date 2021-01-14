@@ -3,7 +3,7 @@ const mockfs = require("mock-fs");
 const {join} = require("path");
 const http = require("http");
 const https = require("https");
-const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
+const {constants: {SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1}} = require("crypto");
 const tlsopt = require("..");
 const keys = Object.keys;
 
@@ -76,12 +76,12 @@ describe("read([boolean])", () => {
         expect(result.pfx.toString()).to.be("cert");
     });
 
-    it("should disable TLSv1", async () => {
+    it("should disable TLSv1/TLSv1.1", async () => {
         process.env.TLS_CERT = "dir/cert.file";
 
         const result = await tlsopt.read();
 
-        expect(result.secureOptions).to.be(SSL_OP_NO_TLSv1);
+        expect(result.secureOptions).to.be(SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
     });
 
     it("should strip processed CLI arguments", async () => {

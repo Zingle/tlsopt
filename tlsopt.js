@@ -2,8 +2,9 @@ const {promisify} = require("util");
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
-const {constants: {SSL_OP_NO_TLSv1}} = require("crypto");
+const {constants: {SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1}} = require("crypto");
 const readFile = promisify(fs.readFile);
+const secureOptions = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1
 
 /**
  * Read TLS options from command-line or environment, load certificates from
@@ -35,7 +36,7 @@ async function read(preserve) {
             tlsopts[key] = await readFile(tlsopts[key]);
         }
 
-        tlsopts.secureOptions = SSL_OP_NO_TLSv1;
+        tlsopts.secureOptions = secureOptions;
     }
 
     return tlsopts;
@@ -55,7 +56,7 @@ function readSync(preserve) {
             tlsopts[key] = fs.readFileSync(tlsopts[key]);
         }
 
-        tlsopts.secureOptions = SSL_OP_NO_TLSv1;
+        tlsopts.secureOptions = secureOptions;
     }
 
     return tlsopts;
