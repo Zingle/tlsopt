@@ -1,6 +1,6 @@
 {
   "name": "tlsopt",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "auto-detect TLS settings",
   "main": "tlsopt.js",
   "scripts": {
@@ -24,8 +24,8 @@
   },
   "homepage": "https://github.com/Zingle/tlsopt#readme",
   "devDependencies": {
-    "expect.js": "^0.3.1",
-    "mocha": "^4.0.1",
-    "mock-fs": "^4.4.2"
+    "expect.js": "*",
+    "mocha": "*",
+    "mock-fs": "*"
   }
 }
