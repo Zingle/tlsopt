@@ -1,4 +1,5 @@
 const expect = require("expect.js");
+const sinon = require("sinon");
 const mockfs = require("mock-fs");
 const {join} = require("path");
 const http = require("http");
@@ -160,22 +161,32 @@ describe("readSync([boolean])", () => {
     });
 });
 
-describe("createServerSync()", () => {
+describe("createServerSync([object], [function])", () => {
+    let httpServer, httpsServer;
+    let httpCreateServer, httpsCreateServer;
     let env;
 
     beforeEach(() => {
+        httpServer = {};
+        httpsServer = {};
+        httpCreateServer = http.createServer;
+        httpsCreateServer = https.createServer;
+        http.createServer = sinon.spy(() => httpServer);
+        https.createServer = sinon.spy(() => httpsServer);
         env = process.env;
         process.env = {};
     });
 
     afterEach(() => {
         process.env = env;
+        https.createServer = httpsCreateServer;
+        http.createServer = httpCreateServer;
     });
 
     it("should create http server when TLS options not set", () => {
         const server = tlsopt.createServerSync();
 
-        expect(server).to.be.an(http.Server);
+        expect(server).to.be(httpServer);
         expect(server.tls).to.be(false);
     });
 
@@ -185,7 +196,38 @@ describe("createServerSync()", () => {
 
         const server = tlsopt.createServerSync();
 
-        expect(tlsopt.createServerSync()).to.be.an(https.Server);
+        expect(server).to.be(httpsServer);
         expect(server.tls).to.be(true);
+    });
+
+    it("should pass options to http.createServer", () => {
+        const options = {foo: 42};
+        const server = tlsopt.createServerSync(options);
+
+        expect(http.createServer.calledOnce).to.be(true);
+        expect(http.createServer.args[0][0]).to.be.an("object");
+        expect(http.createServer.args[0][0].foo).to.be(42);
+    });
+
+    it("should pass options to https.createServer", () => {
+        process.env.TLS_CERT = join(__dirname, "tls/snakeoil.crt");
+        process.env.TLS_KEY = join(__dirname, "tls/snakeoil.key");
+
+        const options = {foo: 42};
+        const server = tlsopt.createServerSync(options);
+
+        expect(https.createServer.calledOnce).to.be(true);
+        expect(https.createServer.args[0][0]).to.be.an("object");
+        expect(https.createServer.args[0][0].foo).to.be(42);
+        expect(https.createServer.args[0][0].cert).to.be.ok();
+    });
+
+    it("should pass requestListener to createServer", () => {
+        const listener = sinon.spy();
+        const server = tlsopt.createServerSync(listener);
+
+        expect(http.createServer.calledOnce).to.be(true);
+        expect(http.createServer.args[0][0]).to.be.an("object");
+        expect(http.createServer.args[0][1]).to.be(listener);
     });
 });

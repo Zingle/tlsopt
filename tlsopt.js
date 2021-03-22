@@ -10,12 +10,18 @@ const secureOptions = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1
  * Read TLS options from command-line or environment, load certificates from
  * filesystem, and create either an http or https server based on those options.
  * Strips command-line options which are used.
+ * @param {object} [options]
+ * @param {function} [requestListener]
  * @returns {http.Server|https.Server}
  */
-function createServerSync() {
+function createServerSync(options, requestListener) {
+    if (typeof options === "function" && !requestListener) {
+        [requestListener, options] = [options, {}];
+    }
+
     const tlsopts = readSync();
-    const web = tlsopts ? https : http
-    const server = web.createServer(...[tlsopts].filter(v=>v));
+    const web = tlsopts ? https : http;
+    const server = web.createServer({...options, ...tlsopts}, requestListener);
 
     server.tls = Boolean(tlsopts);
 
